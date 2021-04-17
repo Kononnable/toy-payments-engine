@@ -1,23 +1,45 @@
-use itertools::Itertools;
-use std::collections::HashMap;
+use csv::ReaderBuilder;
+use std::io::Write;
+use std::{collections::HashMap, env};
 use toy_payments_engine::client::Client;
 use toy_payments_engine::types::Transaction;
 
 fn main() {
-    println!("Hello, world!");
+    let path: String = env::args().nth(1).unwrap();
 
-    let transaction_list: Vec<Transaction> = vec![];
+    let csv_reader = ReaderBuilder::new()
+        .trim(csv::Trim::All)
+        .from_path(path)
+        .unwrap();
+
     let mut clients: HashMap<u16, Client> = HashMap::new();
 
-    for chunk in &transaction_list.into_iter().chunks(1000) {
-        // stable sort, so transactions with same client id should still be sorted chronologically
-        let transactions_by_client = chunk.sorted_by_key(|x| x.client).group_by(|x| x.client);
-        // TODO: Change to par_iter
-        for (client_id, transactions) in transactions_by_client.into_iter() {
-            // TODO: move before for
-            let client = clients.entry(client_id).or_insert_with(Default::default);
+    for transaction in csv_reader
+        .into_deserialize()
+        .filter_map(|x: Result<Transaction, _>| x.ok())
+    {
+        let client = clients
+            .entry(transaction.client)
+            .or_insert_with(Default::default);
 
-            client.process_transactions(transactions);
-        }
+        client.process_transaction(transaction);
+    }
+
+    let stdout = std::io::stdout();
+    let lock = stdout.lock();
+    let mut writer = std::io::BufWriter::new(lock);
+
+    writeln!(&mut writer, "client,available,held,total,locked").unwrap();
+    for (id, client) in clients {
+        writeln!(
+            &mut writer,
+            "{},{},{},{},{}",
+            id,
+            client.available,
+            client.held,
+            client.total(),
+            client.is_frozen
+        )
+        .unwrap();
     }
 }

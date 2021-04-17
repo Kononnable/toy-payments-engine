@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
+use rust_decimal::Decimal;
+
 use crate::{
     errors::TransactionProcessingError,
-    types::{DecimalType, Transaction, TransactionType},
+    types::{Transaction, TransactionType},
 };
 
 #[derive(Debug)]
@@ -20,7 +22,7 @@ enum BalanceChangeEntryStatus {
 #[derive(Debug)]
 struct BalanceChangeEntry {
     pub ty: BalanceChangeEntryType,
-    pub amount: DecimalType,
+    pub amount: Decimal,
     pub status: BalanceChangeEntryStatus,
 }
 
@@ -28,29 +30,25 @@ struct BalanceChangeEntry {
 pub struct Client {
     balance_changes: HashMap<u32, BalanceChangeEntry>,
     // TODO: Can be less then zero? Deposit -> withdraw -> dispute
-    available: DecimalType,
-    held: DecimalType,
-    is_frozen: bool,
+    pub available: Decimal,
+    pub held: Decimal,
+    pub is_frozen: bool,
 }
+
 impl Client {
-    pub fn total(&self) -> DecimalType {
+    pub fn total(&self) -> Decimal {
         self.available + self.held
     }
-    pub fn process_transactions<T>(&mut self, transactions: T)
-    where
-        T: Iterator<Item = Transaction>,
-    {
-        for transaction in transactions {
-            let result = match transaction.ty {
-                TransactionType::Deposit => self.process_deposit(transaction),
-                TransactionType::Withdrawal => self.process_withdrawal(transaction),
-                TransactionType::Dispute => self.process_dispute(transaction),
-                TransactionType::Resolve => self.process_resolve(transaction),
-                TransactionType::Chargeback => self.process_chargeback(transaction),
-            };
-            if let Err(_err) = result {
-                // ignoring partner/client errors
-            }
+    pub fn process_transaction(&mut self, transaction: Transaction) {
+        let result = match transaction.ty {
+            TransactionType::Deposit => self.process_deposit(transaction),
+            TransactionType::Withdrawal => self.process_withdrawal(transaction),
+            TransactionType::Dispute => self.process_dispute(transaction),
+            TransactionType::Resolve => self.process_resolve(transaction),
+            TransactionType::Chargeback => self.process_chargeback(transaction),
+        };
+        if let Err(_err) = result {
+            // ignoring partner/client errors
         }
     }
 
@@ -162,7 +160,7 @@ impl Client {
 
 fn get_transaction_amount(
     transaction: &Transaction,
-) -> Result<DecimalType, TransactionProcessingError> {
+) -> Result<Decimal, TransactionProcessingError> {
     transaction
         .amount
         .ok_or(TransactionProcessingError::AmountNotSpecified)
