@@ -1,20 +1,5 @@
-use std::{
-    collections::HashMap,
-    ops::{Add, AddAssign, Sub, SubAssign},
-};
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 
-#[derive(Debug)]
-pub enum BalanceChangeEntryType {
-    Deposit,
-    Withdrawal,
-}
-
-#[derive(Debug)]
-pub enum BalanceChangeEntryStatus {
-    Valid,
-    ActiveDispute,
-    ChargedBack,
-}
 // Value multiplied by 10_000
 // TODO: conversion methods
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -53,29 +38,6 @@ impl SubAssign for DecimalType {
         };
     }
 }
-
-#[derive(Debug)]
-pub struct BalanceChangeEntry {
-    pub ty: BalanceChangeEntryType,
-    pub amount: DecimalType,
-    pub status: BalanceChangeEntryStatus,
-}
-
-#[derive(Debug, Default)]
-pub struct Client {
-    pub balance_changes: HashMap<u32, BalanceChangeEntry>,
-    // TODO: Can be less then zero? Deposit -> withdraw -> dispute
-    pub available: DecimalType,
-    pub held: DecimalType,
-    pub is_frozen: bool,
-}
-impl Client {
-    pub fn total(&self) -> DecimalType {
-        self.available + self.held
-    }
-}
-
-pub type ClientList = HashMap<u16, Client>;
 
 #[derive(Debug)]
 pub enum TransactionType {
