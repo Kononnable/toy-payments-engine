@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[non_exhaustive]
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum TransactionProcessingError {
     ReusedTransactionId,
     AmountNotSpecified,

@@ -1,3 +1,3 @@
 pub mod client;
 pub mod errors;
-pub mod types;
+pub mod input_types;

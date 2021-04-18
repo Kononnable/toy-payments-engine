@@ -2,7 +2,7 @@ use csv::ReaderBuilder;
 use std::io::Write;
 use std::{collections::HashMap, env};
 use toy_payments_engine::client::Client;
-use toy_payments_engine::types::Transaction;
+use toy_payments_engine::input_types::Transaction;
 
 fn main() {
     let path: String = env::args().nth(1).unwrap();
