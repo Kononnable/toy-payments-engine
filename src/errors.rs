@@ -9,6 +9,7 @@ pub enum TransactionProcessingError {
     UnknownTransactionId,
     DoubleDispute,
     DisputeNotActive,
+    DisputeOnWithdrawal,
 }
 
 impl std::fmt::Display for TransactionProcessingError {

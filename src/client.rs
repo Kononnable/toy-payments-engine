@@ -95,6 +95,9 @@ impl Client {
         transaction: Transaction,
     ) -> Result<(), TransactionProcessingError> {
         let mut balance_change = self.get_balance_change_entry(transaction.tx)?;
+        if balance_change.ty == BalanceChangeEntryType::Withdrawal {
+            return Err(TransactionProcessingError::DisputeOnWithdrawal);
+        }
         if balance_change.status != BalanceChangeEntryStatus::Valid {
             return Err(TransactionProcessingError::DoubleDispute);
         }
@@ -297,10 +300,9 @@ mod tests {
 
         fn create_test_client() -> Client {
             let mut client = Client::default();
-            let amount = Decimal::new(1, 0);
             client
                 .process_deposit(Transaction {
-                    amount: Some(amount),
+                    amount: Some(Decimal::new(1, 0)),
                     client: 0,
                     tx: 1,
                     ty: TransactionType::Deposit,
@@ -339,6 +341,31 @@ mod tests {
                 client.balance_changes.get(&1).unwrap().status,
                 BalanceChangeEntryStatus::ActiveDispute
             );
+        }
+        #[test]
+        fn should_fail_on_withdrawal() {
+            let mut client = create_test_client();
+            client
+                .process_withdrawal(Transaction {
+                    amount: Some(Decimal::new(1, 0)),
+                    client: 0,
+                    tx: 2,
+                    ty: TransactionType::Withdrawal,
+                })
+                .unwrap();
+            let original = client.clone();
+            let result = client.process_dispute(Transaction {
+                amount: None,
+                client: 0,
+                tx: 2,
+                ty: TransactionType::Dispute,
+            });
+
+            assert_eq!(
+                TransactionProcessingError::DisputeOnWithdrawal,
+                result.err().unwrap()
+            );
+            assert_eq!(original, client);
         }
         #[test]
         fn should_fail_on_double_dispute() {

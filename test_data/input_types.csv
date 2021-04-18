@@ -1,4 +1,4 @@
-type,client,tx,amount
+type,  client,tx ,  amount
 deposit,1,1,        1.0
 withdrawal,2,2,2.0
 dispute,3,3,
